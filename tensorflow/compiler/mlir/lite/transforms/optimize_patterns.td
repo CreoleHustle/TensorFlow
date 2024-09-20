@@ -1441,6 +1441,25 @@ def MatchGelu : Pat<
    (HasOneUse $mul_out1),
   ]>;
 
+// For Gelu, replaces
+//   0.5 * x * ( 1 + erfc( x * sqrt_1_2 ) )
+def MatchGeluWithErfc : Pat<
+  (TFL_MulOp
+   (TFL_MulOp:$mul_out $arg0, (Arith_ConstantOp F32ElementsAttr:$Cst_1_2), TFL_AF_None),
+   (TFL_AddOp:$add_out
+    (TF_ErfcOp:$erfc_out
+     (TFL_MulOp:$mul_out1 $arg0, (Arith_ConstantOp F32ElementsAttr:$Cst_sqrt_1_2), TFL_AF_None)),
+    (Arith_ConstantOp  F32ElementsAttr:$Cst_1), TFL_AF_None), TFL_AF_None),
+  (TFL_GeluOp $arg0, ConstBoolAttrFalse),
+  [(FloatValueEquals<"0.5"> $Cst_1_2),
+   (FloatValueEquals<"1"> $Cst_1),
+   (FloatValueEquals<"0.707106769"> $Cst_sqrt_1_2),
+   (HasOneUse $mul_out),
+   (HasOneUse $add_out),
+   (HasOneUse $erfc_out),
+   (HasOneUse $mul_out1),
+  ]>;
+
 // Fetches the output of FC op, from the provided arguments.
 def GetFcOutput : NativeCodeCall<
   "GetFcOutput(&$_builder, $0, $1, $2, $3, $4, $5, $6, $7)">;
