@@ -2117,6 +2117,7 @@ xla_test(
     ],
     backends = ["gpu"],
     deps = [
+        ":gpu_compiler",
         ":gpu_hlo_schedule",
         "//xla:shape_util",
         "//xla/hlo/ir:hlo",
