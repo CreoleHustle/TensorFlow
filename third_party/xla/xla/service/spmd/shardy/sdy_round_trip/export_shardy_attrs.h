@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDINGS_H_
-#define XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDINGS_H_
+#ifndef XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDY_ATTRS_H_
+#define XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDY_ATTRS_H_
 
 #include <memory>
 
@@ -23,19 +23,21 @@ limitations under the License.
 namespace xla {
 namespace sdy {
 
-// Registers the xla-sdy-round-trip-export-shardings pass.
-void registerSdyRoundTripExportShardingsPass();
+// Registers the xla-sdy-round-trip-export-shardy-attrs pass.
+void registerSdyRoundTripExportShardyAttrsPass();
 
 // Creates the pass that converts the shardings from `kShardingAttr` to
-// `kShardingRoundTripAttr` in the HLO frontend attributes and saves the
-// mesh symbols as `kMeshesRoundTripAttr` in the module frontend attributes.
+// `kShardingRoundTripAttr` in the HLO frontend attributes, converts the
+// the sharding rules from `kShardingRuleAttr` to `kShardingRuleRoundTripAttr`
+// and saves the mesh symbols as `kMeshesRoundTripAttr` in the module frontend
+// attributes.
 //
 // NOTE: The `kShardingAttr`s are not removed from the ops. They are kept around
 // because part of the `SdyRoundTripExportPipeline` it also converts the
 // `kShardingAttr`s to `kXlaShardingAttr`s.
-std::unique_ptr<mlir::Pass> createSdyRoundTripExportShardingsPass();
+std::unique_ptr<mlir::Pass> createSdyRoundTripExportShardyAttrsPass();
 
 }  // namespace sdy
 }  // namespace xla
 
-#endif  // XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDINGS_H_
+#endif  // XLA_SERVICE_SPMD_SHARDY_SDY_ROUND_TRIP_EXPORT_SHARDY_ATTRS_H_

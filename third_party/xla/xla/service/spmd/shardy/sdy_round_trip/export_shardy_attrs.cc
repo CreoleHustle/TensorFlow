@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "xla/service/spmd/shardy/sdy_round_trip/export_shardings.h"
+#include "xla/service/spmd/shardy/sdy_round_trip/export_shardy_attrs.h"
 
 #include <cstdint>
 #include <memory>
@@ -70,7 +70,9 @@ using ::mlir::func::FuncOp;
 using ::mlir::mhlo::CustomCallOp;
 
 using ::mlir::sdy::kShardingAttr;
+using ::mlir::sdy::kShardingRuleAttr;
 using ::mlir::sdy::MeshOp;
+using ::mlir::sdy::OpShardingRuleAttr;
 using ::mlir::sdy::TensorShardingAttr;
 using ::mlir::sdy::TensorShardingPerValueAttr;
 
@@ -80,6 +82,13 @@ void saveOpShardingPerValueAttr(Operation* op,
                                 TensorShardingPerValueAttr shardingPerValueAttr,
                                 OpBuilder& builder) {
   addFrontendAttribute(op, kShardingRoundTripAttr, shardingPerValueAttr);
+}
+
+// Saves `shardingRuleAttr` including any existing `frontendAttributes` on
+// the `op`.
+void saveOpShardingRuleAttr(Operation* op, OpShardingRuleAttr shardingRuleAttr,
+                            OpBuilder& builder) {
+  addFrontendAttribute(op, kShardingRuleRoundTripAttr, shardingRuleAttr);
 }
 
 // Converts the shardings from `kShardingAttr` into
@@ -126,16 +135,22 @@ LogicalResult exportFunc(FuncOp funcOp, OpBuilder& builder) {
             op->getAttrOfType<TensorShardingPerValueAttr>(kShardingAttr)) {
       saveOpShardingPerValueAttr(op, oldShardingPerValue, builder);
     }
+    if (auto oldShardingRule =
+            op->getAttrOfType<OpShardingRuleAttr>(kShardingRuleAttr)) {
+      saveOpShardingRuleAttr(op, oldShardingRule, builder);
+      op->removeAttr(kShardingRuleAttr);
+    }
   });
 
   return mlir::success();
 }
 
-class SdyRoundTripExportShardingsPass
-    : public PassWrapper<SdyRoundTripExportShardingsPass,
+class SdyRoundTripExportShardyAttrsPass
+    : public PassWrapper<SdyRoundTripExportShardyAttrsPass,
                          mlir::OperationPass<ModuleOp>> {
  public:
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SdyRoundTripExportShardingsPass)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(
+      SdyRoundTripExportShardyAttrsPass)
 
   void runOnOperation() final {
     ModuleOp moduleOp = getOperation();
@@ -159,7 +174,7 @@ class SdyRoundTripExportShardingsPass
   }
 
   StringRef getArgument() const override {
-    return "xla-sdy-round-trip-export-shardings";
+    return "xla-sdy-round-trip-export-shardy-attrs";
   }
 
   StringRef getDescription() const override {
@@ -176,12 +191,12 @@ class SdyRoundTripExportShardingsPass
 
 }  // namespace
 
-void registerSdyRoundTripExportShardingsPass() {
-  mlir::registerPass(createSdyRoundTripExportShardingsPass);
+void registerSdyRoundTripExportShardyAttrsPass() {
+  mlir::registerPass(createSdyRoundTripExportShardyAttrsPass);
 }
 
-std::unique_ptr<Pass> createSdyRoundTripExportShardingsPass() {
-  return std::make_unique<SdyRoundTripExportShardingsPass>();
+std::unique_ptr<Pass> createSdyRoundTripExportShardyAttrsPass() {
+  return std::make_unique<SdyRoundTripExportShardyAttrsPass>();
 }
 
 }  // namespace sdy
