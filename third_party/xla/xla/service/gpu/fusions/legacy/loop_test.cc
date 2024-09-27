@@ -75,14 +75,11 @@ TEST_F(LoopTest, ThreadIndexingUnrolled) {
       loop_fusion->ComputeThreadIdToOutputIndexing(/*root_index=*/0,
                                                    &mlir_context_);
 
-  EXPECT_THAT(ToString(*thread_id_to_output_indexing,
-                       {"th_x", "th_y", "th_z", "bl_x", "bl_y", "bl_z"},
-                       {"chunk_id", "unroll_id"}),
-              MatchIndexingString(R"(
-  (th_x, th_y, th_z, bl_x, bl_y, bl_z)[chunk_id, unroll_id] -> (
+  EXPECT_THAT(ToString(*thread_id_to_output_indexing), MatchIndexingString(R"(
+  (th_x, th_y, th_z, bl_x, bl_y, bl_z)[s0, s1] -> (
     (bl_x * 128 + th_x) floordiv 15000,
     ((bl_x * 128 + th_x) floordiv 75) mod 200,
-    ((bl_x * 128 + th_x) mod 75) * 4 + unroll_id
+    ((bl_x * 128 + th_x) mod 75) * 4 + s1
   ),
   domain:
   th_x in [0, 127],
@@ -91,8 +88,8 @@ TEST_F(LoopTest, ThreadIndexingUnrolled) {
   bl_x in [0, 11718],
   bl_y in [0, 0],
   bl_z in [0, 0],
-  chunk_id in [0, 0],
-  unroll_id in [0, 3],
+  s0 in [0, 0],
+  s1 in [0, 3],
   bl_x * 128 + th_x in [0, 1499999],
   is_simplified: true
 )"));
@@ -120,11 +117,8 @@ TEST_F(LoopTest, ThreadIndexingNotUnrolled) {
   auto thread_id_to_output_indexing =
       loop_fusion->ComputeThreadIdToOutputIndexing(/*root_index=*/0,
                                                    &mlir_context_);
-  EXPECT_THAT(ToString(*thread_id_to_output_indexing,
-                       {"th_x", "th_y", "th_z", "bl_x", "bl_y", "bl_z"},
-                       {"chunk_id", "unroll_id"}),
-              MatchIndexingString(R"(
-              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[chunk_id, unroll_id] -> (th_x),
+  EXPECT_THAT(ToString(*thread_id_to_output_indexing), MatchIndexingString(R"(
+              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[s0, s1] -> (th_x),
               domain:
               th_x in [0, 19],
               th_y in [0, 0],
@@ -132,18 +126,15 @@ TEST_F(LoopTest, ThreadIndexingNotUnrolled) {
               bl_x in [0, 0],
               bl_y in [0, 0],
               bl_z in [0, 0],
-              chunk_id in [0, 0],
-              unroll_id in [0, 0],
+              s0 in [0, 0],
+              s1 in [0, 0],
               is_simplified: true
             )"));
   auto thread_id_to_input_indexing =
       loop_fusion->ComputeThreadIdToInputIndexing(
           /*root_index=*/0, /*hero_operand_index=*/0, &mlir_context_);
-  EXPECT_THAT(ToString(*thread_id_to_input_indexing,
-                       {"th_x", "th_y", "th_z", "bl_x", "bl_y", "bl_z"},
-                       {"chunk_id", "unroll_id"}),
-              MatchIndexingString(R"(
-              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[chunk_id, unroll_id] -> (th_x),
+  EXPECT_THAT(ToString(*thread_id_to_input_indexing), MatchIndexingString(R"(
+              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[s0, s1] -> (th_x),
               domain:
               th_x in [0, 19],
               th_y in [0, 0],
@@ -151,8 +142,8 @@ TEST_F(LoopTest, ThreadIndexingNotUnrolled) {
               bl_x in [0, 0],
               bl_y in [0, 0],
               bl_z in [0, 0],
-              chunk_id in [0, 0],
-              unroll_id in [0, 0],
+              s0 in [0, 0],
+              s1 in [0, 0],
               is_simplified: true
             )"));
 }
@@ -179,11 +170,8 @@ TEST_F(LoopTest, Broadcast) {
   auto thread_id_to_output_indexing =
       loop_fusion->ComputeThreadIdToOutputIndexing(/*root_index=*/0,
                                                    &mlir_context_);
-  EXPECT_THAT(ToString(*thread_id_to_output_indexing,
-                       {"th_x", "th_y", "th_z", "bl_x", "bl_y", "bl_z"},
-                       {"chunk_id", "unroll_id"}),
-              MatchIndexingString(R"(
-              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[chunk_id, unroll_id] -> (
+  EXPECT_THAT(ToString(*thread_id_to_output_indexing), MatchIndexingString(R"(
+              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[s0, s1] -> (
                 (bl_x * 128 + th_x) floordiv 600,
                 ((bl_x * 128 + th_x) floordiv 30) mod 20,
                 (bl_x * 128 + th_x) mod 30),
@@ -194,19 +182,16 @@ TEST_F(LoopTest, Broadcast) {
                 bl_x in [0, 46],
                 bl_y in [0, 0],
                 bl_z in [0, 0],
-                chunk_id in [0, 0],
-                unroll_id in [0, 0],
+                s0 in [0, 0],
+                s1 in [0, 0],
                 bl_x * 128 + th_x in [0, 5999],
                 is_simplified: true
             )"));
   auto thread_id_to_input_indexing =
       loop_fusion->ComputeThreadIdToInputIndexing(
           /*root_index=*/0, /*hero_operand_index=*/0, &mlir_context_);
-  EXPECT_THAT(ToString(*thread_id_to_input_indexing,
-                       {"th_x", "th_y", "th_z", "bl_x", "bl_y", "bl_z"},
-                       {"chunk_id", "unroll_id"}),
-              MatchIndexingString(R"(
-              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[chunk_id, unroll_id] ->
+  EXPECT_THAT(ToString(*thread_id_to_input_indexing), MatchIndexingString(R"(
+              (th_x, th_y, th_z, bl_x, bl_y, bl_z)[s0, s1] ->
                   (((bl_x * 128 + th_x) floordiv 30) mod 20),
                 domain:
                 th_x in [0, 127],
@@ -215,8 +200,8 @@ TEST_F(LoopTest, Broadcast) {
                 bl_x in [0, 46],
                 bl_y in [0, 0],
                 bl_z in [0, 0],
-                chunk_id in [0, 0],
-                unroll_id in [0, 0],
+                s0 in [0, 0],
+                s1 in [0, 0],
                 bl_x * 128 + th_x in [0, 5999],
                 is_simplified: true
             )"));

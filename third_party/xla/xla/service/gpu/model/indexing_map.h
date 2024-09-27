@@ -50,10 +50,14 @@ enum class VariableKind : char {
   kThreadX,
   kThreadY,
   kThreadZ,
+  // GPU warp ID.
+  kWarp,
+  // GPU thread ID in the warp.
+  kWarpThread
 };
 
-std::string_view ToString(VariableKind type);
-VariableKind ToVariableType(std::string_view type_name);
+std::string_view ToVariableName(VariableKind var_kind);
+VariableKind ToVariableType(std::string_view var_name);
 std::ostream& operator<<(std::ostream& out, VariableKind var_type);
 
 // Interval represents a closed interval [lower_bound, upper_bound].
@@ -201,7 +205,14 @@ class RangeEvaluator {
 // Dimension variable represents a dimension of a tensor or a GPU grid.
 // Dimensions correspond to the dimension parameter of `affine_map_`.
 struct DimVar {
+  DimVar() = default;
+  explicit DimVar(Interval bounds, VariableKind kind = VariableKind::kDefault)
+      : bounds(bounds), kind(kind) {}
+  DimVar(int64_t lb, int64_t ub, VariableKind kind = VariableKind::kDefault)
+      : bounds({lb, ub}), kind(kind) {}
+
   Interval bounds;
+  VariableKind kind = VariableKind::kDefault;
 };
 bool operator==(const DimVar& lhs, const DimVar& rhs);
 inline bool operator!=(const DimVar& lhs, const DimVar& rhs) {
@@ -210,11 +221,11 @@ inline bool operator!=(const DimVar& lhs, const DimVar& rhs) {
 
 template <typename H>
 H AbslHashValue(H h, const DimVar& dimension) {
-  return H::combine(std::move(h), dimension.bounds);
+  return H::combine(std::move(h), dimension.bounds, dimension.kind);
 }
 
 inline size_t hash_value(const DimVar& dim_var) {
-  return llvm::hash_combine(dim_var.bounds);
+  return llvm::hash_combine(dim_var.bounds, dim_var.kind);
 }
 
 // RangeSymbol variable represents a range of values, e.g. to compute a single
@@ -222,7 +233,14 @@ inline size_t hash_value(const DimVar& dim_var) {
 // tensor. RangeSymbol variables correspond to the front portion of the
 // symbols in `affine_map_`.
 struct RangeVar {
+  RangeVar() = default;
+  explicit RangeVar(Interval bounds, VariableKind kind = VariableKind::kDefault)
+      : range(bounds), kind(kind) {}
+  RangeVar(int64_t lb, int64_t ub, VariableKind kind = VariableKind::kDefault)
+      : range({lb, ub}), kind(kind) {}
+
   Interval range;
+  VariableKind kind = VariableKind::kDefault;
 };
 bool operator==(const RangeVar& lhs, const RangeVar& rhs);
 inline bool operator!=(const RangeVar& lhs, const RangeVar& rhs) {
@@ -231,11 +249,11 @@ inline bool operator!=(const RangeVar& lhs, const RangeVar& rhs) {
 
 template <typename H>
 H AbslHashValue(H h, const RangeVar& range_var) {
-  return H::combine(std::move(h), range_var.range);
+  return H::combine(std::move(h), range_var.range, range_var.kind);
 }
 
 inline size_t hash_value(const RangeVar& range_var) {
-  return llvm::hash_combine(range_var.range);
+  return llvm::hash_combine(range_var.range, range_var.kind);
 }
 
 // RTSymbol variable represents a runtime symbol, e.g. a dynamic offset in
@@ -248,6 +266,7 @@ struct RTVar {
   // the iteration space of `hlo`. It shows what element of `hlo` we need to
   // extract to get the runtime value for the RTVar.
   mlir::AffineMap map;
+  VariableKind kind = VariableKind::kDefault;
 };
 bool operator==(const RTVar& lhs, const RTVar& rhs);
 inline bool operator!=(const RTVar& lhs, const RTVar& rhs) {
@@ -258,7 +277,7 @@ template <typename H>
 H AbslHashValue(H h, const RTVar& rt_var) {
   llvm::hash_code map_hash = llvm::hash_combine(rt_var.map);
   return H::combine(std::move(h), rt_var.feasible_values, rt_var.hlo,
-                    static_cast<size_t>(map_hash));
+                    static_cast<size_t>(map_hash), rt_var.kind);
 }
 
 std::vector<DimVar> DimVarsFromTensorSizes(

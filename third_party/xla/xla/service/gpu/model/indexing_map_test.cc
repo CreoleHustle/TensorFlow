@@ -72,20 +72,24 @@ std::vector<bool> ConvertToSTL(const llvm::SmallBitVector& bit_vector) {
 
 TEST_F(IndexingMapTest, VariableKind) {
   EXPECT_EQ(ToVariableType("default"), VariableKind::kDefault);
-  EXPECT_EQ(ToVariableType("thread_x"), VariableKind::kThreadX);
-  EXPECT_EQ(ToVariableType("thread_y"), VariableKind::kThreadY);
-  EXPECT_EQ(ToVariableType("thread_z"), VariableKind::kThreadZ);
-  EXPECT_EQ(ToVariableType("block_x"), VariableKind::kBlockX);
-  EXPECT_EQ(ToVariableType("block_y"), VariableKind::kBlockY);
-  EXPECT_EQ(ToVariableType("block_z"), VariableKind::kBlockZ);
+  EXPECT_EQ(ToVariableType("th_x"), VariableKind::kThreadX);
+  EXPECT_EQ(ToVariableType("th_y"), VariableKind::kThreadY);
+  EXPECT_EQ(ToVariableType("th_z"), VariableKind::kThreadZ);
+  EXPECT_EQ(ToVariableType("bl_x"), VariableKind::kBlockX);
+  EXPECT_EQ(ToVariableType("bl_y"), VariableKind::kBlockY);
+  EXPECT_EQ(ToVariableType("bl_z"), VariableKind::kBlockZ);
+  EXPECT_EQ(ToVariableType("warp"), VariableKind::kWarp);
+  EXPECT_EQ(ToVariableType("th_w"), VariableKind::kWarpThread);
 
-  EXPECT_EQ(ToString(VariableKind::kDefault), "default");
-  EXPECT_EQ(ToString(VariableKind::kThreadX), "thread_x");
-  EXPECT_EQ(ToString(VariableKind::kThreadY), "thread_y");
-  EXPECT_EQ(ToString(VariableKind::kThreadZ), "thread_z");
-  EXPECT_EQ(ToString(VariableKind::kBlockX), "block_x");
-  EXPECT_EQ(ToString(VariableKind::kBlockY), "block_y");
-  EXPECT_EQ(ToString(VariableKind::kBlockZ), "block_z");
+  EXPECT_EQ(ToVariableName(VariableKind::kDefault), "default");
+  EXPECT_EQ(ToVariableName(VariableKind::kThreadX), "th_x");
+  EXPECT_EQ(ToVariableName(VariableKind::kThreadY), "th_y");
+  EXPECT_EQ(ToVariableName(VariableKind::kThreadZ), "th_z");
+  EXPECT_EQ(ToVariableName(VariableKind::kBlockX), "bl_x");
+  EXPECT_EQ(ToVariableName(VariableKind::kBlockY), "bl_y");
+  EXPECT_EQ(ToVariableName(VariableKind::kBlockZ), "bl_z");
+  EXPECT_EQ(ToVariableName(VariableKind::kWarp), "warp");
+  EXPECT_EQ(ToVariableName(VariableKind::kWarpThread), "th_w");
 }
 
 TEST_F(IndexingMapTest, VerifyDimensions) {

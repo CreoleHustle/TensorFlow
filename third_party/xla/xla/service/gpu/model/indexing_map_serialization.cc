@@ -22,11 +22,13 @@ limitations under the License.
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "llvm/ADT/STLExtras.h"
@@ -392,6 +394,14 @@ bool ParseAffineExprsWithMLIR(ArrayRef<std::string> dim_var_names,
   return true;
 }
 
+std::string GetVariableName(int64_t id, VariableKind kind,
+                            std::string_view prefix) {
+  if (kind == VariableKind::kDefault) {
+    return absl::StrFormat("%s%d", prefix, id);
+  }
+  return std::string{ToVariableName(kind)};
+}
+
 std::string GetSymbolName(int64_t symbol_id,
                           absl::Span<const std::string> symbol_names = {}) {
   if (symbol_names.empty()) {
@@ -607,7 +617,7 @@ std::optional<IndexingMap> ParseIndexingMap(llvm::StringRef input,
       llvm::errs() << "Dimension name mismatch\n";
       return std::nullopt;
     }
-    dim_vars.push_back(DimVar{interval});
+    dim_vars.push_back(DimVar{interval, ToVariableType(var_name)});
   }
   // Parse range variables.
   std::vector<RangeVar> range_vars;
@@ -625,7 +635,7 @@ std::optional<IndexingMap> ParseIndexingMap(llvm::StringRef input,
       llvm::errs() << "Symbol name mismatch\n";
       return std::nullopt;
     }
-    range_vars.push_back(RangeVar{interval});
+    range_vars.push_back(RangeVar{interval, ToVariableType(var_name)});
   }
   // Parse constraints.
   SmallVector<Interval> constraint_bounds;
@@ -745,18 +755,23 @@ std::string ToString(AffineMap affine_map,
 }
 
 std::string ToString(const IndexingMap& indexing_map) {
-  const auto& affine_map = indexing_map.GetAffineMap();
-  int dim_count = affine_map.getNumDims();
   SmallVector<std::string, 3> dim_names;
-  dim_names.reserve(affine_map.getNumDims());
-  for (int64_t dim_id = 0; dim_id < dim_count; ++dim_id) {
-    dim_names.push_back(GetDimensionName(dim_id));
+  dim_names.reserve(indexing_map.GetDimensionCount());
+  for (const auto& [dim_id, dim_var] :
+       llvm::enumerate(indexing_map.GetDimVars())) {
+    dim_names.push_back(GetVariableName(dim_id, dim_var.kind, "d"));
   }
-  int symbol_count = affine_map.getNumSymbols();
   SmallVector<std::string, 3> symbol_names;
-  symbol_names.reserve(affine_map.getNumSymbols());
-  for (int64_t symbol_id = 0; symbol_id < symbol_count; ++symbol_id) {
-    symbol_names.push_back(GetSymbolName(symbol_id));
+  symbol_names.reserve(indexing_map.GetSymbolCount());
+  for (const auto& [symbol_id, symbol_var] :
+       llvm::enumerate(indexing_map.GetRangeVars())) {
+    symbol_names.push_back(GetVariableName(symbol_id, symbol_var.kind, "s"));
+  }
+  int num_range_vars = indexing_map.GetRangeVarsCount();
+  for (const auto& [symbol_id, symbol_var] :
+       llvm::enumerate(indexing_map.GetRTVars())) {
+    symbol_names.push_back(
+        GetVariableName(num_range_vars + symbol_id, symbol_var.kind, "s"));
   }
   return ToString(indexing_map, dim_names, symbol_names);
 }

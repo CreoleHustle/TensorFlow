@@ -169,20 +169,28 @@ IndexingMap KernelFusionInterface::GetDefaultThreadIdIndexingMap(
   }
 
   std::vector<DimVar> dim_vars = {
-      {{0, static_cast<int64_t>(launch_dims.thread_counts_per_block().x) - 1}},
-      {{0, static_cast<int64_t>(launch_dims.thread_counts_per_block().y) - 1}},
-      {{0, static_cast<int64_t>(launch_dims.thread_counts_per_block().z) - 1}},
-      {{0, static_cast<int64_t>(launch_dims.block_counts().x) - 1}},
-      {{0, static_cast<int64_t>(launch_dims.block_counts().y) - 1}},
-      {{0, static_cast<int64_t>(launch_dims.block_counts().z) - 1}},
-  };
+      DimVar{0,
+             static_cast<int64_t>(launch_dims.thread_counts_per_block().x) - 1,
+             VariableKind::kThreadX},
+      DimVar{0,
+             static_cast<int64_t>(launch_dims.thread_counts_per_block().y) - 1,
+             VariableKind::kThreadY},
+      DimVar{0,
+             static_cast<int64_t>(launch_dims.thread_counts_per_block().z) - 1,
+             VariableKind::kThreadZ},
+      DimVar{0, static_cast<int64_t>(launch_dims.block_counts().x) - 1,
+             VariableKind::kBlockX},
+      DimVar{0, static_cast<int64_t>(launch_dims.block_counts().y) - 1,
+             VariableKind::kBlockY},
+      DimVar{0, static_cast<int64_t>(launch_dims.block_counts().z) - 1,
+             VariableKind::kBlockZ}};
   std::vector<RangeVar> range_vars;
   int64_t num_elements = ShapeUtil::ElementsIn(shape);
-  range_vars.push_back(
-      {{0, CeilOfRatio(num_elements,
-                       static_cast<int64_t>(launch_dims.launch_bound()) *
-                           unroll_factor) -
-               1}});
+  range_vars.push_back(RangeVar{
+      {0, CeilOfRatio(num_elements,
+                      static_cast<int64_t>(launch_dims.launch_bound()) *
+                          unroll_factor) -
+              1}});
   range_vars.push_back({0, unroll_factor - 1});
   IndexingMap indexing_map(
       mlir::AffineMap::get(/*dimCount=*/6,

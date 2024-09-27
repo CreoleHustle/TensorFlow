@@ -205,6 +205,7 @@ cc_library(
         "//xla/service/gpu/fusions:fusion_emitter",
         "//xla/service/gpu/fusions:reduction_base",
         "//xla/service/gpu/fusions:thunk_util",
+        "//xla/service/gpu/model:indexing_analysis",
         "//xla/service/gpu/runtime:kernel_thunk",
         "//xla/service/gpu/runtime:thunk",
         "//xla/service/llvm_ir:fused_ir_emitter",
