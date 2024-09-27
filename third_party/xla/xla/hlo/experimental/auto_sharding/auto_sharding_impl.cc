@@ -37,7 +37,7 @@ limitations under the License.
 namespace xla {
 namespace spmd {
 
-AutoShardingSolverResult Solve(
+absl::StatusOr<AutoShardingSolverOutput> Solve(
     const HloModule& hlo_module, const HloLiveRange& hlo_live_range,
     const StrategyMap& strategy_map, const StrategyGroups& strategy_groups,
     const CostGraph& cost_graph, const AliasSet& alias_set,

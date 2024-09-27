@@ -1747,7 +1747,7 @@ std::unique_ptr<StrategyGroup> CreateReshapeStrategies(
   return strategy_group;
 }
 
-AutoShardingSolverResult CallSolver(
+absl::StatusOr<AutoShardingSolverOutput> CallSolver(
     const HloModule& hlo_module, const HloLiveRange& hlo_live_range,
     const StrategyMap& strategy_map, const StrategyGroups& strategy_groups,
     const CostGraph& cost_graph, const AliasSet& alias_set,
@@ -3794,13 +3794,10 @@ absl::StatusOr<AutoShardingResult> AutoShardingImplementation::RunAutoSharding(
               cost_graph, alias_set, reduced_node_intervals,
               reduced_edge_intervals, reduced_node_groups, reduced_edge_groups,
               option_, request_name, sharding_propagation_solution);
-    if (solver_result.skip_auto_sharding) {
-      return AutoShardingResult::kModuleUnchangedNoShardingPerformed;
-    } else if (!solver_result.status.ok()) {
+    if (!solver_result.ok()) {
       return AutoShardingResult::kModuleUnchanged;
     }
-    TF_ASSIGN_OR_RETURN(spmd::AutoShardingSolverOutput output,
-                        solver_result.status);
+    TF_ASSIGN_OR_RETURN(spmd::AutoShardingSolverOutput output, solver_result);
     if (mesh_idx == partial_mesh_shapes.size() - 1) {
       this->solver_optimal_objective_value_ = output.cost;
     }
