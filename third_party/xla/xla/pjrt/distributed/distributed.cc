@@ -38,9 +38,14 @@ GetDistributedRuntimeService(std::string address,
 }
 
 std::shared_ptr<DistributedRuntimeClient> GetDistributedRuntimeClient(
-    std::string address, const DistributedRuntimeClient::Options& options) {
-  std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(
-      address, tsl::GetClientCredentials(kVerifySecureCredentials));
+    std::string address, bool use_compression,
+    const DistributedRuntimeClient::Options& options) {
+  grpc::ChannelArguments args;
+  if (use_compression) {
+    args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
+  }
+  std::shared_ptr<grpc::Channel> channel = grpc::CreateCustomChannel(
+      address, tsl::GetClientCredentials(kVerifySecureCredentials), args);
   return GetDistributedRuntimeClient(channel, options);
 }
 
