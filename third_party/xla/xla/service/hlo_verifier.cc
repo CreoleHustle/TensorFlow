@@ -2277,20 +2277,25 @@ absl::Status CheckSameIsHostTransfer(const HloInstruction* instr1,
 absl::Status VerifySingleUser(
     const HloInstruction* instruction,
     const absl::flat_hash_set<HloOpcode>& expected_users) {
-  TF_RET_CHECK(instruction->users().size() == 1)
-      << "The " << instruction->opcode()
-      << " instruction requires one consumer, found "
-      << instruction->users().size();
+  // If the instruction is kSend or kRecv, it can have no users provided that
+  // it is the root of a computation. This is a workaround to enable pipelining
+  // send/recv instructions in the collective-send-recv-combiner pass.
+  if (!instruction->IsRoot()) {
+    TF_RET_CHECK(instruction->users().size() == 1)
+        << "The " << instruction->opcode()
+        << " instruction requires one consumer, found "
+        << instruction->users().size();
 
-  const HloInstruction* user = instruction->users().front();
-  TF_RET_CHECK(expected_users.contains(user->opcode()))
-      << "The consumer of a " << instruction->opcode()
-      << " instruction needs to be one of ("
-      << absl::StrJoin(expected_users, ", ",
-                       [](std::string* out, HloOpcode opcode) {
-                         absl::StrAppend(out, HloOpcodeString(opcode));
-                       })
-      << "), found " << user->opcode();
+    const HloInstruction* user = instruction->users().front();
+    TF_RET_CHECK(expected_users.contains(user->opcode()))
+        << "The consumer of a " << instruction->opcode()
+        << " instruction needs to be one of ("
+        << absl::StrJoin(expected_users, ", ",
+                         [](std::string* out, HloOpcode opcode) {
+                           absl::StrAppend(out, HloOpcodeString(opcode));
+                         })
+        << "), found " << user->opcode();
+  }
   return absl::OkStatus();
 }
 
@@ -2451,20 +2456,30 @@ absl::Status VerifyChannels(const HloModule& module,
 
       switch (instruction->opcode()) {
         case HloOpcode::kSend: {
-          TF_RET_CHECK(instruction->users().size() == 1);
-          const HloInstruction* send_done = instruction->users().front();
-          if (send_done->opcode() == HloOpcode::kSendDone) {
-            TF_RETURN_IF_ERROR(CheckSameChannel(instruction, send_done));
-            TF_RETURN_IF_ERROR(CheckSameIsHostTransfer(instruction, send_done));
+          // If the instruction is kSend or kRecv, it can have no users provided
+          // that it is the root of a computation. This is a workaround to
+          // enable pipelining send/recv instructions in the
+          // collective-send-recv-combiner pass.
+          if (!instruction->IsRoot()) {
+            TF_RET_CHECK(instruction->users().size() == 1);
+            const HloInstruction* send_done = instruction->users().front();
+            if (send_done->opcode() == HloOpcode::kSendDone) {
+              TF_RETURN_IF_ERROR(CheckSameChannel(instruction, send_done));
+              TF_RETURN_IF_ERROR(
+                  CheckSameIsHostTransfer(instruction, send_done));
+            }
           }
           break;
         }
         case HloOpcode::kRecv: {
-          TF_RET_CHECK(instruction->users().size() == 1);
-          const HloInstruction* recv_done = instruction->users().front();
-          if (recv_done->opcode() == HloOpcode::kRecvDone) {
-            TF_RETURN_IF_ERROR(CheckSameChannel(instruction, recv_done));
-            TF_RETURN_IF_ERROR(CheckSameIsHostTransfer(instruction, recv_done));
+          if (!instruction->IsRoot()) {
+            TF_RET_CHECK(instruction->users().size() == 1);
+            const HloInstruction* recv_done = instruction->users().front();
+            if (recv_done->opcode() == HloOpcode::kRecvDone) {
+              TF_RETURN_IF_ERROR(CheckSameChannel(instruction, recv_done));
+              TF_RETURN_IF_ERROR(
+                  CheckSameIsHostTransfer(instruction, recv_done));
+            }
           }
           break;
         }
