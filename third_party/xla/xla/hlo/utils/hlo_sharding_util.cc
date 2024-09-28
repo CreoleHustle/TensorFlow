@@ -2458,6 +2458,15 @@ GetGatherScatterIndexPassthroughOutputOrUpdateDims(
   return passthrough_dims;
 }
 
+template <typename T>
+std::vector<int64_t> argsort(absl::Span<const T> data) {
+  std::vector<int64_t> indices(data.size());
+  std::iota(indices.begin(), indices.end(), 0);
+  std::sort(indices.begin(), indices.end(),
+            [&data](int64_t i1, int64_t i2) { return data[i1] < data[i2]; });
+  return indices;
+}
+
 HloSharding InferGatherScatterParallelShardingFromOperandSharding(
     const HloSharding& operand_sharding, const Shape& operand_shape,
     const Shape& shape,
@@ -2466,29 +2475,43 @@ HloSharding InferGatherScatterParallelShardingFromOperandSharding(
   if (operand_sharding.IsTileMaximal()) {
     return operand_sharding;
   }
-  std::vector<int64_t> output_tile_dims(shape.rank(), 1);
-  std::vector<int64_t> operand_non_parallel_dims;
-  operand_non_parallel_dims.reserve(operand_shape.rank());
-  // Detect non parallel dimensions in the operand.
-  for (int i = 0; i < operand_shape.rank(); ++i) {
-    if (!absl::c_linear_search(output_aligned_operand_parallel_dims, i)) {
-      operand_non_parallel_dims.push_back(i);
-    }
+
+  HloSharding replicate_non_parallel_dims =
+      PartiallyReplicateTiledShardingOnAllDimsExcept(
+          operand_sharding, output_aligned_operand_parallel_dims);
+  if (replicate_non_parallel_dims.IsTileMaximal()) {
+    return replicate_non_parallel_dims;
   }
-  // Collect tile dimensions in the operand. The order of the parallel
-  // dimensions in output_aligned_operand_parallel_dims is the same as that of
-  // the output
+
+  std::vector<int64_t> argsort_output_aligned_operand_parallel_dims =
+      argsort(output_aligned_operand_parallel_dims);
+  std::vector<int64_t> argsort_output_parallel_dims =
+      argsort(output_parallel_dims);
+  if (argsort_output_aligned_operand_parallel_dims !=
+      argsort_output_parallel_dims) {
+    std::vector<int64_t> perm(
+        replicate_non_parallel_dims.tile_assignment().num_dimensions(), -1);
+    for (int64_t i = 0; i < output_aligned_operand_parallel_dims.size(); ++i) {
+      perm[output_aligned_operand_parallel_dims
+               [argsort_output_parallel_dims[i]]] = i;
+    }
+    int64_t i = output_aligned_operand_parallel_dims.size();
+    for (auto& perm_element : perm) {
+      if (perm_element == -1) {
+        perm_element = i++;
+      }
+    }
+    replicate_non_parallel_dims =
+        TransposeSharding(replicate_non_parallel_dims, perm);
+  }
+
+  // Collect tile dimensions in the operand.
+  std::vector<int64_t> output_tile_dims(shape.rank(), 1);
   for (int i = 0; i < output_aligned_operand_parallel_dims.size(); ++i) {
     const int64_t operand_idx = output_aligned_operand_parallel_dims[i];
     const int64_t output_idx = output_parallel_dims[i];
     output_tile_dims[output_idx] =
         operand_sharding.tile_assignment().dim(operand_idx);
-  }
-  HloSharding replicate_non_parallel_dims =
-      PartiallyReplicateTiledShardingOnDims(operand_sharding,
-                                            operand_non_parallel_dims);
-  if (replicate_non_parallel_dims.IsTileMaximal()) {
-    return replicate_non_parallel_dims;
   }
   for (int64_t i = replicate_non_parallel_dims.TiledDataRank();
        i < replicate_non_parallel_dims.tile_assignment().num_dimensions();
@@ -2496,6 +2519,7 @@ HloSharding InferGatherScatterParallelShardingFromOperandSharding(
     output_tile_dims.push_back(
         replicate_non_parallel_dims.tile_assignment().dim(i));
   }
+
   auto output_tile_assignment =
       replicate_non_parallel_dims.tile_assignment().Reshape(output_tile_dims);
   return replicate_non_parallel_dims.ReplicateOnLastTileDim()
