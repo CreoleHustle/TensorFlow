@@ -24,6 +24,7 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "xla/hlo/ir/dfs_hlo_visitor_with_default.h"
 #include "xla/hlo/ir/hlo_instruction.h"
@@ -32,6 +33,7 @@ limitations under the License.
 #include "xla/service/call_graph.h"
 #include "xla/service/hlo_dce.h"
 #include "xla/service/hlo_domain_isolator.h"
+#include "xla/service/spmd/shardy/constants.h"
 #include "xla/status_macros.h"
 #include "xla/util.h"
 #include "tsl/platform/errors.h"
@@ -159,7 +161,12 @@ CallInliner::Inline(HloInstruction* call) {
 }
 
 bool CallInliner::IsInlineableCallOp(HloInstruction* instruction) const {
-  return instruction->opcode() == HloOpcode::kCall &&
+  bool inline_under_shardy =
+      !(instruction->GetModule()->config().use_shardy_partitioner() &&
+        (absl::StrContains(instruction->to_apply()->name(), "shmap_body") ||
+         absl::StartsWith(instruction->to_apply()->name(),
+                          sdy::kManualComputationBodyFuncName)));
+  return inline_under_shardy && instruction->opcode() == HloOpcode::kCall &&
          !instruction->has_backend_config() &&
          !instruction->parent()->IsAsyncComputation();
 }
