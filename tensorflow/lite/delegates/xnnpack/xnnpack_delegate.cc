@@ -2475,24 +2475,6 @@ class Subgraph {
     return kTfLiteOk;
   }
 
-  static TfLiteStatus CheckTensorNonDynamicAllocation(
-      const Delegate& delegate, TfLiteContext* context,
-      const TfLiteTensor& tensor, int tensor_index, int node_index) {
-    // TODO(b/149120844): remove checks once dynamic tensors are supported
-    if (delegate.enable_subgraph_reshaping()) {
-      return kTfLiteOk;
-    }
-    if (tensor.allocation_type == kTfLiteDynamic) {
-      TF_LITE_MAYBE_KERNEL_LOG(
-          context,
-          "invalid allocation type in tensor #%d in node #%d: "
-          "expected non-dynamic tensor",
-          tensor_index, node_index);
-      return kTfLiteError;
-    }
-    return kTfLiteOk;
-  }
-
   static TfLiteStatus CheckTensorStaticAllocation(TfLiteContext* context,
                                                   const TfLiteTensor& tensor,
                                                   int tensor_index,
@@ -3025,16 +3007,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_abs(
@@ -3065,9 +3041,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input1_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input1_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -3077,9 +3050,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input2_tensor,
                                        node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input2_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[1],
@@ -3089,9 +3059,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (input1_tensor.type != input2_tensor.type ||
         input1_tensor.type != output_tensor.type) {
@@ -3174,16 +3141,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     TF_LITE_ENSURE_STATUS(CheckPoolingParams(logging_context, pool_params,
                                              BuiltinOperator_AVERAGE_POOL_2D,
@@ -3269,12 +3230,6 @@ class Subgraph {
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-
-    // Check the input tensor non-dynamic allocations.
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input_a, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input_b, node->inputs->data[1], node_index));
 
     // Check whether the dimensions are compatible.
     const int num_dims_a = NumDimensions(&input_a);
@@ -3445,16 +3400,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_ceiling(
@@ -3488,9 +3437,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     // Check dimensions
     if (output_tensor.type == kTfLiteUInt8) {
@@ -3523,9 +3469,6 @@ class Subgraph {
     for (int i = 0; i < num_inputs; i++) {
       const TfLiteTensor& input_tensor = tensors[node->inputs->data[i]];
       TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQUInt8Type(
-          delegate, logging_context, input_tensor, node->inputs->data[i],
-          node_index));
-      TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
           delegate, logging_context, input_tensor, node->inputs->data[i],
           node_index));
     }
@@ -3597,9 +3540,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, 4, node->inputs->data[0],
         BuiltinOperator_CONV_2D, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& filter_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQCInt8Type(
@@ -3641,9 +3581,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, 4, node->outputs->data[0],
         BuiltinOperator_CONV_2D, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     bool dynamically_quantized = (delegate.enable_latest_operators() &&
                                   (input_tensor.type == kTfLiteFloat32 &&
@@ -3812,9 +3749,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, 4, node->inputs->data[0],
         BuiltinOperator_DEPTHWISE_CONV_2D, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& filter_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQCInt8Type(
@@ -3856,9 +3790,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, 4, node->outputs->data[0],
         BuiltinOperator_DEPTHWISE_CONV_2D, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (input_tensor.type != output_tensor.type ||
         input_tensor.type != filter_tensor.type) {
@@ -3933,17 +3864,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (depth_to_space_params->block_size <= 1) {
       TF_LITE_MAYBE_KERNEL_LOG(
@@ -3984,9 +3909,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorQInt8OrQUInt8Type(delegate, logging_context, input_tensor,
                                      node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -3995,9 +3917,6 @@ class Subgraph {
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_convert(
@@ -4027,9 +3946,6 @@ class Subgraph {
     const TfLiteTensor& input1_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input1_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input1_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -4038,9 +3954,6 @@ class Subgraph {
     const TfLiteTensor& input2_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input2_tensor, node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input2_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[1],
@@ -4049,9 +3962,6 @@ class Subgraph {
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     float output_min = -std::numeric_limits<float>::infinity();
     float output_max = +std::numeric_limits<float>::infinity();
@@ -4091,17 +4001,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQInt8Type(delegate, logging_context, input_tensor,
                                       node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQInt8Type(delegate, logging_context, output_tensor,
                                       node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_elu(
@@ -4137,9 +4041,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& filter_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
@@ -4148,9 +4049,6 @@ class Subgraph {
     // Dynamic filter is supported, but only for FP32.
     if (delegate.support_dynamic_fully_connected_operator() &&
         filter_tensor.type == kTfLiteFloat32) {
-      TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-          delegate, logging_context, filter_tensor, node->inputs->data[1],
-          node_index));
     } else {
       TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQCInt4OrQCInt8Type(
           delegate, logging_context, filter_tensor,
@@ -4174,9 +4072,6 @@ class Subgraph {
         // Dynamic bias is supported, but only for FP32.
         if (delegate.support_dynamic_fully_connected_operator() &&
             bias_tensor.type == kTfLiteFloat32) {
-          TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-              delegate, logging_context, bias_tensor, node->inputs->data[2],
-              node_index));
         } else {
           const int num_bias_elements = NumElements(&bias_tensor);
           if (num_bias_elements != output_channels) {
@@ -4203,9 +4098,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     bool dynamically_quantized = (delegate.enable_latest_operators() &&
                                   (input_tensor.type == kTfLiteFloat32 &&
@@ -4365,16 +4257,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_floor(
@@ -4437,16 +4323,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_hardswish(
@@ -4478,17 +4358,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (!std::isnormal(leaky_relu_params->alpha) ||
         leaky_relu_params->alpha == 0.0f) {
@@ -4552,17 +4426,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_sigmoid(
@@ -4593,17 +4461,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     TF_LITE_ENSURE_STATUS(CheckPoolingParams(
         logging_context, pool_params, BuiltinOperator_MAX_POOL_2D, node_index));
@@ -4667,9 +4529,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, input_tensor, 4,
                                            node->inputs->data[0],
                                            BuiltinOperator_SUM, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& axes_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorType(logging_context, axes_tensor,
@@ -4729,9 +4588,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, expected_output_dims,
         node->outputs->data[0], BuiltinOperator_SUM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const float output_min = -std::numeric_limits<float>::infinity();
     const float output_max = +std::numeric_limits<float>::infinity();
@@ -4779,23 +4635,14 @@ class Subgraph {
     const TfLiteTensor& input1_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input1_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
 
     const TfLiteTensor& input2_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input2_tensor, node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_maximum2(
@@ -4827,9 +4674,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& axes_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorType(logging_context, axes_tensor,
@@ -4916,10 +4760,6 @@ class Subgraph {
       }
     }
 
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
-
     if (subgraph != nullptr) {
       uint32_t flags = reducer_params->keep_dims ? XNN_FLAG_KEEP_DIMS : 0;
       xnn_status status = xnn_status_success;
@@ -4989,9 +4829,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, input_tensor, 4,
                                            node->inputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& filter_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
@@ -5023,9 +4860,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, output_tensor, 4,
                                            node->outputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const int* input_tensor_dims = input_tensor.dims->data;
     const int input_height = input_tensor_dims[1];
@@ -5107,9 +4941,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, input_tensor, 4,
                                            node->inputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_value_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
@@ -5118,17 +4949,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, output_value_tensor,
                                            4, node->outputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_value_tensor, node->outputs->data[0],
-        node_index));
 
     const TfLiteTensor& output_index_tensor = tensors[node->outputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, output_index_tensor,
                                            4, node->outputs->data[1],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_index_tensor, node->outputs->data[1],
-        node_index));
 
     TF_LITE_ENSURE_STATUS(
         CheckMediaPipePoolParams(logging_context, pool_params, node_index));
@@ -5176,17 +5001,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, input_value_tensor,
                                            4, node->inputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input_value_tensor, node->inputs->data[0],
-        node_index));
 
     const TfLiteTensor& input_index_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, input_index_tensor,
                                            4, node->inputs->data[1],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input_index_tensor, node->inputs->data[1],
-        node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
@@ -5194,9 +5013,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(logging_context, output_tensor, 4,
                                            node->outputs->data[0],
                                            BuiltinOperator_CUSTOM, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     TF_LITE_ENSURE_STATUS(
         CheckMediaPipePoolParams(logging_context, pool_params, node_index));
@@ -5244,23 +5060,14 @@ class Subgraph {
     const TfLiteTensor& input1_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input1_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
 
     const TfLiteTensor& input2_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input2_tensor, node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_minimum2(
@@ -5292,9 +5099,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input1_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input1_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -5304,9 +5108,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input2_tensor,
                                        node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input2_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[1],
@@ -5316,9 +5117,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const float scale_min = 1.0f / 65536.0f;
     const float scale_max = 256.0f;
@@ -5363,16 +5161,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_negate(
@@ -5406,9 +5198,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, 1, XNN_MAX_TENSOR_DIMS,
         node->inputs->data[0], BuiltinOperator_PAD, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& paddings_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorType(logging_context, paddings_tensor,
@@ -5428,9 +5217,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, 1, XNN_MAX_TENSOR_DIMS,
         node->outputs->data[0], BuiltinOperator_PAD, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const int32_t* paddings_data =
         reinterpret_cast<const int32_t*>(paddings_tensor.data.data);
@@ -5494,9 +5280,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, 1, XNN_MAX_TENSOR_DIMS,
         node->inputs->data[0], BuiltinOperator_PRELU, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& slope_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
@@ -5516,9 +5299,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, 1, XNN_MAX_TENSOR_DIMS,
         node->outputs->data[0], BuiltinOperator_PRELU, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_prelu(
@@ -5550,17 +5330,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorQInt8OrQUInt8Type(delegate, logging_context, output_tensor,
                                      node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -5674,16 +5448,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_clamp(
@@ -5735,9 +5503,6 @@ class Subgraph {
         logging_context, input_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
         BuiltinOperator_RESHAPE, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     std::array<size_t, XNN_MAX_TENSOR_DIMS> new_shape;
     int num_new_dimensions;
@@ -5779,9 +5544,6 @@ class Subgraph {
         logging_context, output_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->outputs->data[0],
         BuiltinOperator_RESHAPE, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (output_tensor.type == kTfLiteUInt8 ||
         output_tensor.type == kTfLiteInt8) {
@@ -5838,9 +5600,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, 4, node->inputs->data[0],
         BuiltinOperator_RESIZE_BILINEAR, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& shape_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorType(logging_context, shape_tensor,
@@ -5866,9 +5625,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, output_tensor, 4, node->outputs->data[0],
         BuiltinOperator_RESIZE_BILINEAR, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const int32_t* shape_data =
         reinterpret_cast<const int32_t*>(shape_tensor.data.data);
@@ -5917,16 +5673,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_bankers_rounding(
@@ -5989,16 +5739,10 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        input_tensor_index, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        input_tensor_index, node_index));
 
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        output_tensor_index, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, output_tensor_index,
-        node_index));
 
     std::array<int64_t, XNN_MAX_TENSOR_DIMS> begin;
     std::array<int64_t, XNN_MAX_TENSOR_DIMS> size;
@@ -6064,16 +5808,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_softmax(
@@ -6106,17 +5844,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const int block_size = space_to_depth_params->block_size;
     if (block_size <= 1) {
@@ -6188,8 +5920,6 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[input_idx];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQUInt8Type(
         delegate, logging_context, input_tensor, input_idx, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input_tensor, input_idx, node_index));
 
     int32_t split_dim = GetTensorData<int32_t>(&split_dim_tensor)[0];
 
@@ -6198,8 +5928,6 @@ class Subgraph {
       const TfLiteTensor& output_tensor = tensors[output_idx];
 
       TF_LITE_ENSURE_STATUS(CheckTensorFloat32OrQUInt8Type(
-          delegate, logging_context, output_tensor, output_idx, node_index));
-      TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
           delegate, logging_context, output_tensor, output_idx, node_index));
     }
 
@@ -6253,9 +5981,6 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -6264,9 +5989,6 @@ class Subgraph {
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_square(
@@ -6297,17 +6019,11 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_tanh(
@@ -6335,9 +6051,6 @@ class Subgraph {
         logging_context, node, 2, 1, BuiltinOperator_TRANSPOSE, node_index));
 
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
@@ -6349,10 +6062,6 @@ class Subgraph {
 
     const int* perm_data = GetTensorData<int32_t>(&perm_tensor);
 
-    const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
     const int dims_count = NumElements(&perm_tensor);
     std::array<size_t, XNN_MAX_TENSOR_DIMS> perm;
     for (int i = 0; i < dims_count; ++i) {
@@ -6391,16 +6100,10 @@ class Subgraph {
     const TfLiteTensor& input_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        node->inputs->data[0], node_index));
 
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_square_root(
@@ -6463,9 +6166,6 @@ class Subgraph {
     const TfLiteTensor& input1_tensor = tensors[node->inputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input1_tensor, node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input1_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -6474,9 +6174,6 @@ class Subgraph {
     const TfLiteTensor& input2_tensor = tensors[node->inputs->data[1]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, input2_tensor, node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input2_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[1],
@@ -6485,9 +6182,6 @@ class Subgraph {
     const TfLiteTensor& output_tensor = tensors[node->outputs->data[0]];
     TF_LITE_ENSURE_STATUS(CheckTensorFloat32Type(
         logging_context, output_tensor, node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     if (subgraph != nullptr) {
       const xnn_status status = xnn_define_squared_difference(
@@ -6610,16 +6304,10 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input_tensor,
                                        input_tensor_index, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        input_tensor_index, node_index));
 
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        output_tensor_index, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, output_tensor_index,
-        node_index));
 
     auto begin_data = GetTensorData<int32_t>(&begin_tensor);
     auto end_data = GetTensorData<int32_t>(&end_tensor);
@@ -7146,9 +6834,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input1_tensor,
                                        node->inputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input1_tensor, node->inputs->data[0],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input1_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[0],
@@ -7158,9 +6843,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, input2_tensor,
                                        node->inputs->data[1], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, input2_tensor, node->inputs->data[1],
-        node_index));
     TF_LITE_ENSURE_STATUS(CheckTensorShape(
         logging_context, input2_tensor, /*min_num_dims=*/0,
         /*max_num_dims=*/XNN_MAX_TENSOR_DIMS, node->inputs->data[1],
@@ -7170,9 +6852,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorFloat32OrQUInt8Type(delegate, logging_context, output_tensor,
                                        node->outputs->data[0], node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, node->outputs->data[0],
-        node_index));
 
     const float scale_min = 1.0f / 1024.0f;
     const float scale_max = 256.0f;
@@ -7264,9 +6943,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorShape(logging_context, input_tensor, 4, input_tensor_index,
                          BuiltinOperator_TRANSPOSE_CONV, node_index));
-    TF_LITE_ENSURE_STATUS(
-        CheckTensorNonDynamicAllocation(delegate, logging_context, input_tensor,
-                                        input_tensor_index, node_index));
 
     bool dynamically_quantized = (input_tensor.type == kTfLiteFloat32 &&
                                   filter_tensor.type == kTfLiteInt8);
@@ -7304,9 +6980,6 @@ class Subgraph {
     TF_LITE_ENSURE_STATUS(
         CheckTensorShape(logging_context, output_tensor, 4, output_tensor_index,
                          BuiltinOperator_TRANSPOSE_CONV, node_index));
-    TF_LITE_ENSURE_STATUS(CheckTensorNonDynamicAllocation(
-        delegate, logging_context, output_tensor, output_tensor_index,
-        node_index));
 
     const int* input_tensor_dims = input_tensor.dims->data;
     const int input_height = input_tensor_dims[1];
