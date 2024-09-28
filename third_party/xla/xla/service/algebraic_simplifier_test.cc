@@ -1343,6 +1343,36 @@ TEST_F(AlgebraicSimplifierTest, AddReassociateMergeBroadcastedConstants) {
                                                     m::ConstantScalar(2.0))))));
 }
 
+TEST_F(AlgebraicSimplifierTest, ReplaceSubtractOfEqualOperandsWithZero) {
+  const char* kModuleStr = R"(
+    HloModule m
+    test {
+      p0 = f32[] parameter(0)
+      ROOT sub = f32[] subtract(p0, p0)
+    }
+  )";
+  TF_ASSERT_OK_AND_ASSIGN(auto m, ParseAndReturnVerifiedModule(kModuleStr));
+  ASSERT_TRUE(AlgebraicSimplifier(default_options_).Run(m.get()).value());
+  EXPECT_THAT(m->entry_computation()->root_instruction(),
+              GmockMatch(m::ConstantScalar(0.0)));
+}
+
+TEST_F(AlgebraicSimplifierTest,
+       ReplaceSubtractOfEqualOperandsWithBroadcastZero) {
+  const char* kModuleStr = R"(
+    HloModule m
+    test {
+      p0 = f32[512,20] parameter(0)
+      ROOT sub = f32[512,20] subtract(p0, p0)
+    }
+  )";
+  TF_ASSERT_OK_AND_ASSIGN(auto m, ParseAndReturnVerifiedModule(kModuleStr));
+  ASSERT_TRUE(AlgebraicSimplifier(default_options_).Run(m.get()).value());
+  std::cout << m->ToString() << std::endl;
+  EXPECT_THAT(m->entry_computation()->root_instruction(),
+              GmockMatch(m::Broadcast()));
+}
+
 TEST_F(AlgebraicSimplifierTest, SubAddReassociateMergeConstants) {
   const char* kModuleStr = R"(
     HloModule m
