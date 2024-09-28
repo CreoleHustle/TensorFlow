@@ -337,6 +337,7 @@ cc_library(
     deps = [
         ":ifrt",
         ":test_util",
+        "@local_tsl//tsl/platform:statusor",
         "@local_tsl//tsl/platform:test",
     ],
     alwayslink = True,

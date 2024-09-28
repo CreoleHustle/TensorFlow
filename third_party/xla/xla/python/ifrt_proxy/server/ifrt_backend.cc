@@ -266,7 +266,13 @@ absl::StatusOr<BackendInterface::Response> IfrtBackend::HandleInit(
   init_resp->set_runtime_type(AsProtoStringData(client_->runtime_type()));
   init_resp->set_process_index(client_->process_index());
 
-  for (auto* device : client_->devices()) {
+  absl::Span<xla::ifrt::Device* const> all_devices;
+  if (version_.protocol_version() <= 5) {
+    all_devices = client_->devices();
+  } else {
+    all_devices = client_->GetAllDevices();
+  }
+  for (auto* device : all_devices) {
     InitResponse::Device* d = init_resp->add_devices();
     d->set_id(device->Id().value());
     d->set_device_kind(AsProtoStringData(device->Kind()));
@@ -290,12 +296,20 @@ absl::StatusOr<BackendInterface::Response> IfrtBackend::HandleInit(
       *d->mutable_attributes() = device->Attributes().ToProto();
     }
   }
+  if (version_.protocol_version() <= 5) {
+    // Client that do not support Client::GetAllDevices() does not expect
+    // receiving device_ids.
+  } else {
+    for (auto* device : client_->devices()) {
+      init_resp->add_device_ids(device->Id().value());
+    }
+  }
   for (auto* addressable_device : client_->addressable_devices()) {
     init_resp->add_addressable_device_ids(addressable_device->Id().value());
   }
 
   absl::flat_hash_map<int, xla::ifrt::Memory*> memories;
-  for (auto* device : client_->devices()) {
+  for (auto* device : all_devices) {
     for (xla::ifrt::Memory* memory : device->Memories()) {
       const auto [it, inserted] =
           memories.insert({memory->Id().value(), memory});
