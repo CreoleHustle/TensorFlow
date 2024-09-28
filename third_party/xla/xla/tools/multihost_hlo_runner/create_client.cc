@@ -83,7 +83,8 @@ static absl::StatusOr<std::unique_ptr<xla::PjRtClient>> GetPjRtClient(
   options.node_id = node_id;
   options.init_timeout = init_timeout;
   distributed_client =
-      GetDistributedRuntimeClient(std::string(address), options);
+      GetDistributedRuntimeClient(std::string(address),
+                                  /*use_compression=*/false, options);
   TF_QCHECK_OK(distributed_client->Connect());
   kv_store = GetDistributedKeyValueStore(distributed_client,
                                          /*key_prefix=*/"gpu:");
