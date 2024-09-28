@@ -5,9 +5,13 @@ FROM ubuntu:22.04@sha256:58b87898e82351c6cf9cf5b9f3c20257bb9e2dcf33af051e12ce532
 # Install devtoolset build dependencies
 COPY setup.sources.sh /setup.sources.sh
 COPY setup.packages.sh /setup.packages.sh
+COPY builder.requirements.txt /builder.requirements.txt
 COPY builder.packages.txt /builder.packages.txt
 
 RUN /setup.sources.sh && /setup.packages.sh /builder.packages.txt
+
+# Install Python requirements
+RUN pip install -r /builder.requirements.txt
 
 # Install devtoolset-9 in /dt9 with glibc 2.17 and libstdc++ 4.8, for building
 # manylinux2014-compatible packages.
