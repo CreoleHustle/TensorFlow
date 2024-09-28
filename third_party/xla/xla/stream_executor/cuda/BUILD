@@ -308,6 +308,7 @@ xla_test(
         "//xla/stream_executor/gpu:gpu_driver_header",
         "//xla/stream_executor/gpu:gpu_types_header",
         "//xla/stream_executor/gpu:scoped_activate_context",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/log",
         "@com_google_googletest//:gtest_main",
         "@local_config_cuda//cuda:cuda_headers",
